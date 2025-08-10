@@ -559,7 +559,7 @@ if section == 'Home':
                         elif (user_sqft2 > user_sqft) and (price2/user_sqft2 <= price1/user_sqft):
                             recommendation = "Property B"
                             reason = "Larger space at better value per sqft"
-                        elif price1 < price2:
+                        elif price1 < price1:
                             recommendation = "Property A"
                             reason = "Lower overall cost"
                         elif price2 < price1:
@@ -917,8 +917,7 @@ elif section == 'About':
     st.markdown("""
     - **Email:** support@homevision.com
     - **Website:** [www.homevision.com](https://www.homevision.com)
-    - **GitHub:** [github.com/your-repo](https://github.com/your-repo)
+    - **GitHub:** [github.com/Yuvaraj-ui132](https://github.com/Yuvaraj-ui132)
     - **Twitter:** [@HomeVisionApp](https://twitter.com/HomeVisionApp)
     """)
     st.markdown('</div>', unsafe_allow_html=True)
-    
