@@ -197,6 +197,22 @@ sns.set_style("whitegrid", {"axes.facecolor": '#ffffff', "figure.facecolor": '#f
 plt.rcParams.update({'text.color': '#000000', 'axes.labelcolor': '#000000'})
 plot_fg = '#000000' # A variable to be used for text color in plots
 
+# --- CENTRALIZED PRICING LOGIC --- <<< ADDED
+def calculate_price(sqft, bedrooms, bathrooms):
+    """Calculates the house price based on its features using the new formula."""
+    if sqft is None or bedrooms is None or bathrooms is None:
+        return None
+    
+    # Define the components of the price
+    base_price = 60000
+    price_per_sqft = 20000  # <<< UPDATED: User's requested price per sqft
+    price_per_bedroom = 25000
+    price_per_bathroom = 20000
+    
+    # Calculate the final price
+    price = base_price + (sqft * price_per_sqft) + (bedrooms * price_per_bedroom) + (bathrooms * price_per_bathroom)
+    return price
+
 # --- NAVIGATION ---
 st.markdown('<h1 class="main-header"><span class="icon">🏠</span>Home Vision</h1>', unsafe_allow_html=True)
 
@@ -229,14 +245,19 @@ with nav[2]:
 
 section = st.session_state['section']
 
-# --- DUMMY DATA ---
+# --- DUMMY DATA --- <<< UPDATED
 np.random.seed(42)
 sample_size = 200
 sqft = np.random.randint(500, 4000, sample_size)
 bedrooms = np.random.randint(1, 6, sample_size)
 bathrooms = np.random.randint(1, 5, sample_size)
-price = 50000 + sqft * 150 + bedrooms * 20000 + bathrooms * 15000 + np.random.normal(0, 20000, sample_size)
-booked = np.random.choice([0, 1], size=sample_size, p=[0.7, 0.3])  # 30% booked
+
+# Generate prices using the new centralized function for consistency
+# We iterate to apply the function row-wise and add some noise for realism
+prices = [calculate_price(s, b, ba) for s, b, ba in zip(sqft, bedrooms, bathrooms)]
+price = np.array(prices) + np.random.normal(0, 500000, sample_size) # Increased noise for larger price scale
+
+booked = np.random.choice([0, 1], size=sample_size, p=[0.7, 0.3])
 
 df = pd.DataFrame({
     'sqft': sqft,
@@ -302,13 +323,13 @@ if section == 'Home':
 
     # Show only the output for the button pressed
     if price_btn:
-        if user_sqft is None or user_bedrooms is None or user_bathrooms is None:
+        # <<< UPDATED: Use the centralized function
+        price = calculate_price(user_sqft, user_bedrooms, user_bathrooms)
+        if price is None:
             st.warning("⚠️ Please enter all house details to show price.")
         else:
             with st.spinner('🔄 Calculating your property value...'):
                 time.sleep(1)  # Animation effect
-                base = 60000
-                price = base + user_sqft * 180 + user_bedrooms * 25000 + user_bathrooms * 20000
 
                 # Modern price display card
                 st.markdown(f'''
@@ -319,14 +340,14 @@ if section == 'Home':
                 </div>
                 ''', unsafe_allow_html=True)
     if future_price_btn:
-        if user_sqft is None or user_bedrooms is None or user_bathrooms is None:
+        # <<< UPDATED: Use the centralized function
+        price = calculate_price(user_sqft, user_bedrooms, user_bathrooms)
+        if price is None:
             st.warning("⚠️ Please enter all house details to show future price.")
         else:
             with st.spinner('🔮 Generating price forecast...'):
                 time.sleep(1.5)  # Animation effect
-                base = 60000
-                price = base + user_sqft * 180 + user_bedrooms * 25000 + user_bathrooms * 20000
-
+                
                 st.markdown('<div class="glass-card">', unsafe_allow_html=True)
                 st.markdown("### 📈 5-Year Price Forecast Analysis")
                 st.markdown("*Predictions based on market trends, inflation, and property appreciation*")
@@ -334,7 +355,7 @@ if section == 'Home':
                 # Enhanced forecast with different scenarios using matplotlib
                 years = np.array(range(2024, 2030))
                 conservative_growth = np.array([price * (1.03) ** i for i in range(1, 7)])  # 3% conservative
-                moderate_growth = np.array([price * (1.05) ** i for i in range(1, 7)])      # 5% moderate
+                moderate_growth = np.array([price * (1.05) ** i for i in range(1, 7)])     # 5% moderate
                 optimistic_growth = np.array([price * (1.07) ** i for i in range(1, 7)])    # 7% optimistic
 
                 plt.style.use('ggplot')
@@ -375,7 +396,9 @@ if section == 'Home':
 
                 st.markdown('</div>', unsafe_allow_html=True)
     if graph_btn:
-        if user_sqft is None or user_bedrooms is None or user_bathrooms is None:
+        # <<< UPDATED: Use the centralized function
+        user_price = calculate_price(user_sqft, user_bedrooms, user_bathrooms)
+        if user_price is None:
             st.warning("⚠️ Please enter all house details to view the 3D visualization.")
         else:
             with st.spinner('🎨 Creating interactive 3D visualization...'):
@@ -392,7 +415,6 @@ if section == 'Home':
                 scatter = ax.scatter(df['sqft'], df['bedrooms'], df['price'], c=df['price'], cmap='viridis', label='Market Properties')
 
                 # Add user's property as a highlighted point
-                user_price = 60000 + user_sqft * 180 + user_bedrooms * 25000 + user_bathrooms * 20000
                 ax.scatter([user_sqft], [user_bedrooms], [user_price], color='red', s=100, label='Your Property', marker='D')
 
                 ax.set_title("3D Property Market Analysis", color=plot_fg)
@@ -459,17 +481,15 @@ if section == 'Home':
             st.session_state['show_compare'] = False
             st.rerun()
         if compare_now:
-            if (user_sqft is None or user_bedrooms is None or user_bathrooms is None or
-                user_sqft2 is None or user_bedrooms2 is None or user_bathrooms2 is None):
+            # <<< UPDATED: Use the centralized function for both properties
+            price1 = calculate_price(user_sqft, user_bedrooms, user_bathrooms)
+            price2 = calculate_price(user_sqft2, user_bedrooms2, user_bathrooms2)
+            
+            if price1 is None or price2 is None:
                 st.warning("⚠️ Please enter all details for both properties to compare.")
             else:
                 with st.spinner('🔍 Analyzing properties and generating comparison...'):
                     time.sleep(1.5)
-
-                    # Calculate prices and metrics
-                    base = 60000
-                    price1 = base + user_sqft * 180 + user_bedrooms * 25000 + user_bathrooms * 20000
-                    price2 = base + user_sqft2 * 180 + user_bedrooms2 * 25000 + user_bathrooms2 * 20000
 
                     # Side-by-side property cards
                     st.markdown("### 🏠 Property Comparison Dashboard")
